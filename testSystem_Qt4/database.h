@@ -9,19 +9,33 @@
 #define DATABASE_H
 
 #include <QMessageBox>
+#include <QSettings>
+#include <QString>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlError>
 
 
 static bool createConnection()
 {
+    // Read database credentials from db.conf (not committed to version control)
+    QSettings settings("db.conf", QSettings::IniFormat);
+    QString host     = settings.value("database/host",     "localhost").toString();
+    QString user     = settings.value("database/user",     "").toString();
+    QString password = settings.value("database/password", "").toString();
+    QString dbname   = settings.value("database/dbname",   "mydb").toString();
 
-    //QTextCodec::setCodecForTr(QTextCodec::codecForLocale());
+    if (user.isEmpty()) {
+        QMessageBox::warning(0, QObject::tr("Database Error"),
+                             QObject::tr("Database credentials not configured. "
+                                         "Please create db.conf based on db.conf.example."));
+        return false;
+    }
+
     QSqlDatabase db(QSqlDatabase::addDatabase("QMYSQL"));
-    db.setHostName("localhost");
-    db.setUserName("root");
-    db.setPassword("878455");
-    db.setDatabaseName("mydb");
+    db.setHostName(host);
+    db.setUserName(user);
+    db.setPassword(password);
+    db.setDatabaseName(dbname);
     if (!db.open()) {
         QMessageBox::warning(0, QObject::tr("Database Error"),
                              db.lastError().text());

@@ -67,8 +67,9 @@ void adminform::on_btnDel_clicked()
     QString ID=ui->tvTeacher->currentIndex().data().toString();
     qDebug()<<ID;
     QSqlQuery query;
-    query.exec("delete from Teacher where ID ='"+ID+"'");
-    if(query.isActive())
+    query.prepare("DELETE FROM Teacher WHERE ID=?");
+    query.addBindValue(ID);
+    if(query.exec())
     {
         query.numRowsAffected();
         QMessageBox::about(this,"message","Delete success!");
@@ -92,8 +93,9 @@ void adminform::on_btnDel_2_clicked()
     QString ID=ui->tvStudent_2->currentIndex().data().toString();
     qDebug()<<ID;
     QSqlQuery query;
-    query.exec("delete from Student where ID ='"+ID+"'");
-    if(query.isActive())
+    query.prepare("DELETE FROM Student WHERE ID=?");
+    query.addBindValue(ID);
+    if(query.exec())
     {
         query.numRowsAffected();
         QMessageBox::about(this,"message","Delete success!");

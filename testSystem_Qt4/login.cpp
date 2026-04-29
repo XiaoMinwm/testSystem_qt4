@@ -32,7 +32,6 @@ login::~login()
 
 void login::on_btnOk_clicked()
 {
-
     bool flag = false;
     QString usrn,pwd,type;
     usrn=ui->leName->text();
@@ -40,49 +39,46 @@ void login::on_btnOk_clicked()
     type=ui->cbxType->currentText();
     QSqlQuery query;
     if(type==tr("管理员"))
-   {
-        query.exec("select * from Usr ");
-        while(query.next())
+    {
+        query.prepare("SELECT ID FROM Usr WHERE Name=? AND PassWd=?");
+        query.addBindValue(usrn);
+        query.addBindValue(pwd);
+        if(query.exec() && query.next())
         {
-            if(query.value(1).toString()==usrn&&query.value(2).toString()==pwd)
-            {
-                flag = true;
-                adminform *a = new adminform;
-                a->show();
-                this->close();
-            }
+            flag = true;
+            adminform *a = new adminform;
+            a->show();
+            this->close();
         }
     }
     else if(type==tr("教师"))
     {
-        query.exec("select * from Teacher");
-        while(query.next())
+        query.prepare("SELECT ID FROM Teacher WHERE Name=? AND PassWd=?");
+        query.addBindValue(usrn);
+        query.addBindValue(pwd);
+        if(query.exec() && query.next())
         {
-            if(query.value(2).toString()==usrn&&query.value(3).toString()==pwd)
-            {
-                flag = true;
-                teacherform *t = new teacherform(usrn);
-                t->show();
-                this->close();
-            }
+            flag = true;
+            teacherform *t = new teacherform(usrn);
+            t->show();
+            this->close();
         }
     }
     else
     {
-        query.exec("select * from Student");
-        while(query.next())
+        query.prepare("SELECT ID FROM Student WHERE Name=? AND PassWd=?");
+        query.addBindValue(usrn);
+        query.addBindValue(pwd);
+        if(query.exec() && query.next())
         {
-            if(query.value(2).toString()==usrn&&query.value(3).toString()==pwd)
-            {
-                flag = true;
-                studentform *t = new studentform(usrn);
-                t->show();
-                this->close();
-            }
+            flag = true;
+            studentform *t = new studentform(usrn);
+            t->show();
+            this->close();
         }
     }
     if(!flag)
-        QMessageBox::warning(this,tr("Warning"),tr("Usrname or passwd is not wrong!"));
+        QMessageBox::warning(this,tr("Warning"),tr("Username or password is incorrect!"));
 
 }
 

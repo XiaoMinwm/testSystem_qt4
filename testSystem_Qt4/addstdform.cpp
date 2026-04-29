@@ -27,7 +27,9 @@ void addstdform::on_btnOk_clicked()
     if(ui->leID->text()==""||ui->leStdNum->text()==""||ui->leName->text()==""||ui->lePwd->text()=="")
     {QMessageBox::about(this,"Message","item with * can't not be empty!");return ;}
      QSqlQuery query;
-     query.exec("select count(*) from Student where ID='"+ui->leID->text()+"'");
+     query.prepare("SELECT COUNT(*) FROM Student WHERE ID=?");
+     query.addBindValue(ui->leID->text());
+     query.exec();
      int ID=0;
      if(query.next())
             ID = query.value(0).toInt();
@@ -35,7 +37,7 @@ void addstdform::on_btnOk_clicked()
      {
             QMessageBox::about(this,"Message","this ID existed!");
             QString maxNum ;
-            query.exec("select  ID from Student order by ID desc");
+            query.exec("SELECT MAX(ID) FROM Student");
             if(query.next())
             {
                 maxNum = query.value(0).toString();
@@ -43,14 +45,20 @@ void addstdform::on_btnOk_clicked()
             QMessageBox::about(this,"Message","max ID="+maxNum);
             return ;
      }
-     query.exec("select * from Student where Name='"+ui->leName->text()+"'");
+     query.prepare("SELECT ID FROM Student WHERE Name=?");
+     query.addBindValue(ui->leName->text());
+     query.exec();
      if(query.next())
      {
          QMessageBox::about(this,"Message",tr("该用户已经存在！"));
          return ;
      }
-     query.exec("insert into Student values('"+ui->leID->text()+"','"+ui->leStdNum->text()+"','"+ui->leName->text()+"','"+ui->lePwd->text()+"')");
-     if(query.isActive())
+     query.prepare("INSERT INTO Student VALUES(?,?,?,?)");
+     query.addBindValue(ui->leID->text());
+     query.addBindValue(ui->leStdNum->text());
+     query.addBindValue(ui->leName->text());
+     query.addBindValue(ui->lePwd->text());
+     if(query.exec())
      {
             query.numRowsAffected();
             QMessageBox::about(this,"message","add success");

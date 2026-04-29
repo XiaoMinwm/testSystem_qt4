@@ -28,7 +28,9 @@ void addthform::on_btnOk_clicked()
     {QMessageBox::about(this,"Message","item with * can't not be empty!");return ;}
 
      QSqlQuery query;
-     query.exec("select count(*) from Teacher where ID='"+ui->leID->text()+"'");
+     query.prepare("SELECT COUNT(*) FROM Teacher WHERE ID=?");
+     query.addBindValue(ui->leID->text());
+     query.exec();
 
      int ID=0;
      if(query.next())
@@ -37,7 +39,7 @@ void addthform::on_btnOk_clicked()
      {
             QMessageBox::about(this,"Message","this ID existed!");
             QString maxNum ;
-            query.exec("select  ID from Teacher order by ID desc");
+            query.exec("SELECT MAX(ID) FROM Teacher");
             if(query.next())
             {
                 maxNum = query.value(0).toString();
@@ -45,14 +47,20 @@ void addthform::on_btnOk_clicked()
             QMessageBox::about(this,"Message","max ID="+maxNum);
             return ;
      }
-     query.exec("select * from Teacher where Name='"+ui->leName->text()+"'");
+     query.prepare("SELECT ID FROM Teacher WHERE Name=?");
+     query.addBindValue(ui->leName->text());
+     query.exec();
      if(query.next())
      {
          QMessageBox::about(this,"Message",tr("该用户已经存在！"));
          return ;
      }
-     query.exec("insert into Teacher values('"+ui->leID->text()+"','"+ui->leThNum->text()+"','"+ui->leName->text()+"','"+ui->lePwd->text()+"')");
-     if(query.isActive())
+     query.prepare("INSERT INTO Teacher VALUES(?,?,?,?)");
+     query.addBindValue(ui->leID->text());
+     query.addBindValue(ui->leThNum->text());
+     query.addBindValue(ui->leName->text());
+     query.addBindValue(ui->lePwd->text());
+     if(query.exec())
      {
             query.numRowsAffected();
             QMessageBox::about(this,"message","add success");
