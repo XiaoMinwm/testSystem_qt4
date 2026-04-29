@@ -8,6 +8,7 @@
 #include "teacherform.h"
 #include "ui_teacherform.h"
 #include <QMessageBox>
+#include <QRegExp>
 #include <QSqlQuery>
 #include <QFileDialog>
 #include <QTextStream>
@@ -124,8 +125,18 @@ void teacherform::on_lvTitle_clicked(QModelIndex index)
 
 void teacherform::on_btnSearch_2_clicked()
 {
-    QString stdNum = ui->leStdNum_2->text();
-    scoreInfoModel->setFilter(QString("StdNum='%1'").arg(stdNum.replace("'", "''")));
+    QString stdNum = ui->leStdNum_2->text().trimmed();
+    // Validate that student number contains only alphanumeric characters
+    // to prevent SQL injection via setFilter() which does not support binding
+    static QRegExp validStdNum("^[A-Za-z0-9]+$");
+    if (!stdNum.isEmpty() && !validStdNum.exactMatch(stdNum)) {
+        QMessageBox::warning(this, tr("Input Error"), tr("学号只能包含字母和数字！"));
+        return;
+    }
+    if (stdNum.isEmpty())
+        scoreInfoModel->setFilter("");
+    else
+        scoreInfoModel->setFilter(QString("StdNum='%1'").arg(stdNum));
     scoreInfoModel->select();
 }
 
