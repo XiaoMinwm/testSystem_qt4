@@ -23,25 +23,26 @@ studentform::studentform(QString n,QWidget *parent) :
     stdName =n;
     QString stdNum;
     QString name;
-    QString pwd;
     QString sub;
     QString score1;
     QSqlQuery query;
-    query.exec("select * from Student where Name= '"+stdName+"'");
+    query.prepare("SELECT StdNum, Name FROM Student WHERE Name=?");
+    query.addBindValue(stdName);
+    query.exec();
     while(query.next())
     {
-        stdNum = query.value(1).toString();
-        name = query.value(2).toString();
-        pwd = query.value(3).toString();
+        stdNum = query.value(0).toString();
+        name = query.value(1).toString();
         ui->textEdit->append(tr("学号：")+stdNum);
         ui->textEdit->append(tr("用户名：")+name);
-        ui->textEdit->append(tr("密码：")+pwd);
     }
-    query.exec("select * from Score where StdNum= '"+stdNum+"'");
+    query.prepare("SELECT Sub, Score FROM Score WHERE StdNum=?");
+    query.addBindValue(stdNum);
+    query.exec();
     while(query.next())
     {
-        sub = query.value(2).toString();
-        score1 = query.value(3).toString();
+        sub = query.value(0).toString();
+        score1 = query.value(1).toString();
         ui->textEdit->append(tr("科目：")+sub+tr("  成绩：")+score1);
     }
 
@@ -87,12 +88,23 @@ void studentform::on_btnOk_2_clicked()
     {QMessageBox::about(this,"Message","item with * can't not be empty!");return ;}
     if(ui->leNewPwd_2->text()!=ui->leNewPwd2_2->text())
     {QMessageBox::about(this,"Message",tr("新密码和确认新密码不统一！"));return ;}
+    // Verify old password before updating
     QSqlQuery query;
-    query.exec("update Student set PassWd='"+ui->leNewPwd_2->text()+"' WHERE Name='"+stdName+"'");
-    if(query.isActive())
+    query.prepare("SELECT ID FROM Student WHERE Name=? AND PassWd=?");
+    query.addBindValue(stdName);
+    query.addBindValue(ui->leOldPwd_2->text());
+    if(!query.exec() || !query.next())
     {
-            query.numRowsAffected();
-            QMessageBox::about(this,"message","success");
+        QMessageBox::about(this,"Message",tr("旧密码错误！"));
+        return;
+    }
+    query.prepare("UPDATE Student SET PassWd=? WHERE Name=?");
+    query.addBindValue(ui->leNewPwd_2->text());
+    query.addBindValue(stdName);
+    if(query.exec())
+    {
+        query.numRowsAffected();
+        QMessageBox::about(this,"message","success");
     }
 }
 
@@ -154,18 +166,27 @@ void studentform::on_btnSubmit_3_clicked()
         ans[currentNum-1] = "D";
 
     QSqlQuery query;
-    query.exec("select * from Question where ID='"+QString::number(questionId[currentNum-1])+"'");
+    query.prepare("SELECT * FROM Question WHERE ID=?");
+    query.addBindValue(questionId[currentNum-1]);
+    query.exec();
     if(query.next())
         if(query.value(4).toString()==ans[currentNum-2])
             score = score +5;
 
-    query.exec("select StdNum from Student where Name='"+stdName+"'");
+    query.prepare("SELECT StdNum FROM Student WHERE Name=?");
+    query.addBindValue(stdName);
+    query.exec();
     if(query.next())
         stdNum = query.value(0).toString();
-    query.exec("select count(*) from Score ");
+    query.exec("SELECT COUNT(*) FROM Score ");
     if(query.next())
         maxID= query.value(0).toInt();
-    query.exec("insert into Score values('"+QString::number(maxID+1)+"','"+stdNum+"','"+ui->cbxSub_3->currentText()+"','"+QString::number(score)+"')");
+    query.prepare("INSERT INTO Score VALUES(?,?,?,?)");
+    query.addBindValue(maxID+1);
+    query.addBindValue(stdNum);
+    query.addBindValue(ui->cbxSub_3->currentText());
+    query.addBindValue(score);
+    query.exec();
     ui->leScore_3->setText(QString::number(score));
 
 }

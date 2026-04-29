@@ -1,0 +1,14 @@
+# Database credentials – never commit the real config file
+db.conf
+
+# Qt build artifacts
+*.pro.user
+*.pro.user.*
+build/
+release/
+debug/
+Makefile
+*.o
+*.moc
+ui_*.h
+moc_*.cpp

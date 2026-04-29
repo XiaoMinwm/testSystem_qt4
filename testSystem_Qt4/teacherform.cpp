@@ -62,11 +62,17 @@ void teacherform::on_btnAdd_clicked()
     QTextStream in(&file);
     QString temp=in.readAll();
     QSqlQuery  query;
-    query.exec("select max(ID) from Question");
+    query.exec("SELECT MAX(ID) FROM Question");
     if(query.next())
         maxid = query.value(0).toInt();
     id = maxid +1;
-    query.exec("insert into Question values('"+QString::number(id)+"','"+sub+"','"+fileName+"','"+temp+"','"+ans+"')");
+    query.prepare("INSERT INTO Question VALUES(?,?,?,?,?)");
+    query.addBindValue(id);
+    query.addBindValue(sub);
+    query.addBindValue(fileName);
+    query.addBindValue(temp);
+    query.addBindValue(ans);
+    query.exec();
     on_btnRefresh_clicked();
 }
 
@@ -74,8 +80,9 @@ void teacherform::on_btnDel_clicked()
 {
     QString title = ui->lvTitle->currentIndex().data().toString();
     QSqlQuery query;
-    query.exec("delete from Question where Title='"+title+"'");
-    if(query.isActive())
+    query.prepare("DELETE FROM Question WHERE Title=?");
+    query.addBindValue(title);
+    if(query.exec())
     {
         query.numRowsAffected();
         QMessageBox::about(this,"message","Delete success!");
@@ -86,8 +93,12 @@ void teacherform::on_btnDel_clicked()
 void teacherform::on_btnRefresh_clicked()
 {
     QString sub=ui->cbxType->currentText();
+    QSqlQuery query;
+    query.prepare("SELECT Title FROM Question WHERE sub=?");
+    query.addBindValue(sub);
+    query.exec();
     QSqlQueryModel *model = new QSqlQueryModel;
-    model->setQuery("select Title from Question where sub ='"+sub+"'");
+    model->setQuery(query);
     ui->lvTitle->setModel(model);
 }
 
@@ -101,16 +112,20 @@ void teacherform::on_lvTitle_clicked(QModelIndex index)
     QString title=index.data().toString();
     QString sub=ui->cbxType->currentText();
 
+    QSqlQuery query;
+    query.prepare("SELECT Content FROM Question WHERE Title=? AND sub=?");
+    query.addBindValue(title);
+    query.addBindValue(sub);
+    query.exec();
     QSqlQueryModel *model = new QSqlQueryModel;
-    model->setQuery("select Content from Question where Title ='"+title+"' and sub='"+sub+"'");
-
+    model->setQuery(query);
     ui->lvContent->setModel(model);
-    //ui->listView_2->show();
 }
 
 void teacherform::on_btnSearch_2_clicked()
 {
-    scoreInfoModel->setFilter("StdNum="+ui->leStdNum_2->text());
+    QString stdNum = ui->leStdNum_2->text();
+    scoreInfoModel->setFilter(QString("StdNum='%1'").arg(stdNum.replace("'", "''")));
     scoreInfoModel->select();
 }
 
@@ -120,12 +135,23 @@ void teacherform::on_btnOk_3_clicked()
     {QMessageBox::about(this,"Message","item with * can't not be empty!");return ;}
     if(ui->leNewPwd_3->text()!=ui->leNewPwd2_3->text())
     {QMessageBox::about(this,"Message",tr("新密码和确认新密码不统一！"));return ;}
+    // Verify old password before updating
     QSqlQuery query;
-    query.exec("update Teacher set PassWd='"+ui->leNewPwd_3->text()+"' WHERE Name='"+Name+"'");
-    if(query.isActive())
+    query.prepare("SELECT ID FROM Teacher WHERE Name=? AND PassWd=?");
+    query.addBindValue(Name);
+    query.addBindValue(ui->leOldPwd_3->text());
+    if(!query.exec() || !query.next())
     {
-            query.numRowsAffected();
-            QMessageBox::about(this,"message","success");
+        QMessageBox::about(this,"Message",tr("旧密码错误！"));
+        return;
+    }
+    query.prepare("UPDATE Teacher SET PassWd=? WHERE Name=?");
+    query.addBindValue(ui->leNewPwd_3->text());
+    query.addBindValue(Name);
+    if(query.exec())
+    {
+        query.numRowsAffected();
+        QMessageBox::about(this,"message","success");
     }
 }
 
